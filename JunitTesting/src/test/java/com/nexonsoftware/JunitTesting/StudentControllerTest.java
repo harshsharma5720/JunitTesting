@@ -13,8 +13,12 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.MockitoAnnotations;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.MvcResult;
+import org.springframework.test.web.servlet.ResultMatcher;
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
@@ -22,7 +26,9 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
+
 import static org.hamcrest.Matchers.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.*;
 import static org.springframework.http.RequestEntity.post;
 import static org.springframework.test.web.client.match.MockRestRequestMatchers.content;
@@ -48,14 +54,14 @@ public class StudentControllerTest {
 
     @Test
     public void getAllStudent_Success() throws Exception {
-        List<Student> students = Arrays.asList(new Student(1L, "John Doe","AIML", "johndoe@example.com"),
-                new Student(2L, "harsh","AIML", "johndoe@example.com"),
-                new Student(3L, "Akshay","AIML", "johndoe@example.com")
+        List<Student> students = Arrays.asList(new Student(1L, "John Doe", "AIML", "johndoe@example.com"),
+                new Student(2L, "harsh", "AIML", "johndoe@example.com"),
+                new Student(3L, "Akshay", "AIML", "johndoe@example.com")
         );
         Mockito.when(studentService.getAllStudent()).thenReturn(students);
         mockMvc.perform(MockMvcRequestBuilders
-                .get("/student")
-                .contentType(MediaType.APPLICATION_JSON))
+                        .get("/student")
+                        .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$[0].studentId").value(1L))
                 .andExpect(jsonPath("$[0].studentName").value("John Doe"))
@@ -69,39 +75,46 @@ public class StudentControllerTest {
 
     @Test
     public void addStudent_Success() throws Exception {
-        Student student = new Student(1L, "John Doe","AIML", "johndoe@example.com");
+        Student student = new Student(1L, "John Doe", "AIML", "johndoe@example.com");
         when(studentService.addStudent(student)).thenReturn(student);
         mockMvc.perform(MockMvcRequestBuilders
                 .post("/student")
-               .contentType(MediaType.APPLICATION_JSON)
-               .content(objectMapper.writeValueAsString(student)));
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(student)));
 
     }
 
     @Test
     public void getStudentById_Success() throws Exception {
-        Student student = new Student(1L, "John Doe","AIML", "johndoe@example.com");
+        Student student = new Student(1L, "John Doe", "AIML", "johndoe@example.com");
         when(studentService.getStudentById(student.getStudentId())).thenReturn(student);
         mockMvc.perform(MockMvcRequestBuilders
-               .get("/student/id/{studentId}", student.getStudentId())
-               .contentType(MediaType.APPLICATION_JSON))
-               .andExpect(status().isOk())
-               .andExpect(jsonPath("studentId").value(1L))
-               .andExpect(jsonPath("studentName").value("John Doe"))
-               .andExpect(jsonPath("branch").value("AIML"))
-               .andExpect(jsonPath("studentPassword").value("johndoe@example.com"));
+                        .get("/student/id/{studentId}", student.getStudentId())
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("studentId").value(1L))
+                .andExpect(jsonPath("studentName").value("John Doe"))
+                .andExpect(jsonPath("branch").value("AIML"))
+                .andExpect(jsonPath("studentPassword").value("johndoe@example.com"));
         verify(studentService, times(1)).getStudentById(student.getStudentId());
 
     }
 
     @Test
     public void removeStudent_Success() throws Exception {
-        Student student = new Student(1L, "John Doe","AIML", "johndoe@example.com");
+        Student student = new Student(1L, "John Doe", "AIML", "johndoe@example.com");
+        String expectedMessage = "Student removed successfully";
         when(studentService.removeStudent(student.getStudentId())).thenReturn(true);
-        mockMvc.perform(MockMvcRequestBuilders
-                .delete("/student/id/{studentId}", student.getStudentId())
-                .contentType(MediaType.APPLICATION_JSON))
-                .andExpect(status().isOk());
+
+        MvcResult mvcResult = mockMvc.perform(MockMvcRequestBuilders
+                        .delete("/student/id/{studentId}", student.getStudentId())
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk())
+                .andReturn();
+
+        String actualMessage = mvcResult.getResponse().getContentAsString();
+        assertEquals(expectedMessage, actualMessage);
+
         verify(studentService, times(1)).removeStudent(student.getStudentId());
     }
 
@@ -109,9 +122,9 @@ public class StudentControllerTest {
     public void removeAllStudents_Success() throws Exception {
         when(studentService.removeAllStudent()).thenReturn(true);
         mockMvc.perform(MockMvcRequestBuilders
-               .delete("/student/deleteAll")
-               .contentType(MediaType.APPLICATION_JSON))
-               .andExpect(status().isOk());
+                        .delete("/student/deleteAll")
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk());
         verify(studentService, times(1)).removeAllStudent();
 
     }
